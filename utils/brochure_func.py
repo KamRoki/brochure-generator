@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 import json
 from IPython.display import display, Markdown, update_display
+import streamlit as st
 
 
 
@@ -68,7 +69,7 @@ def get_links_user_prompt(website):
 def get_links(url):
     openai = OpenAI(base_url = 'http://localhost:11434/v1', api_key = 'ollama')
     website = Website(url)
-    response = openai.chat.completion.create(
+    response = openai.chat.completions.create(
         model = 'llama3.2',
         messages = [
             {'role': 'system', 'content': link_system_prompt()},
@@ -132,20 +133,43 @@ def get_brochure_user_prompt(company_name, url):
 
 
 
+# def stream_brochure(company_name, url):
+#     openai = OpenAI(base_url = 'http://localhost:11434/v1', api_key = 'ollama')
+#     stream = openai.chat.completions.create(
+#         model = 'llama3.2',
+#         messages = [
+#             {'role': 'system', 'content': system_prompt()},
+#             {'role': 'user', 'content': get_brochure_user_prompt(company_name, url)}
+#         ],
+#         stream = True
+#     )
+    
+#     response = ''
+#     display_handle = display(Markdown(''), display_id = True)
+#     for chunk in stream:
+#         response += chunk.choices[0].delta.content or ''
+#         response = response.replace('```', '').replace('markdown', '')
+#         update_display(Markdown(response), display_id = display_handle.display_id)
+
+
 def stream_brochure(company_name, url):
-    openai = OpenAI(base_url = 'http://localhost:11434/v1', api_key = 'ollama')
-    stream = openai.chat.completion.create(
-        model = 'llama3.2',
-        messages = [
+    openai = OpenAI(base_url='http://localhost:11434/v1', api_key='ollama')
+    stream = openai.chat.completions.create(
+        model='llama3.2',
+        messages=[
             {'role': 'system', 'content': system_prompt()},
             {'role': 'user', 'content': get_brochure_user_prompt(company_name, url)}
         ],
-        stream = True
+        stream=True
     )
     
-    response = ''
-    display_handle = display(Markdown(''), display_id = True)
+    response = ""
+    # Użycie Streamlit do wyświetlenia odpowiedzi w czasie rzeczywistym
+    placeholder = st.empty()  # Placeholder na dynamiczne aktualizowanie treści
+
     for chunk in stream:
-        response += chunk.choices[0].delta.content or ''
-        response = response.replace('```', '').replace('markdown', '')
-        update_display(Markdown(response), display_id = display_handle.display_id)
+        # Pobieranie danych z każdego fragmentu
+        content = chunk.choices[0].delta.content or ''
+        response += content
+        response_cleaned = response.replace('```', '').replace('markdown', '')  # Oczyszczanie treści
+        placeholder.markdown(response_cleaned)  # Aktualizacja placeholdera w Streamlit
